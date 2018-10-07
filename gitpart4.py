@@ -141,3 +141,173 @@ def multiplication(list1, list2):
 
         list_result.sort()
         return list(list_result for list_result,_ in itertools.groupby(list_result))   #Some general methods for grouping
+ def petrick_method(Chart):               #Main motive is to implement this function.
+    P = []
+    for colum in range(len(Chart[0])):
+        p =[]
+        for rows in range(len(Chart)):
+            if Chart[rows][colum] == 1:
+                p.append([rows])
+        P.append(p)
+    for l in range(len(P)-1):
+        P[l+1] = multiplication(P[l],P[l+1])           #Multiplication function
+
+    P = sorted(P[len(P)-1],key=len)
+    final = []
+    min=len(P[0])
+    for i in P:
+        if len(i) == min:
+            final.append(i)
+        else:
+            break
+    return final
+
+
+def find_minimum_cost(Chart, unchecked):
+    P_final = []
+    essprime = find_prime(Chart)
+    essprime = remove_redundant_list(essprime)
+
+    #print out the essential primes
+    if len(essprime)>0:
+        s ="Essential Prime Implicants"
+        for i in range(len(unchecked)):
+            for j in essprime:
+                if j == i:
+                    s= s+binary_to_letter(unchecked[i])+' , '
+        print (s[:(len(s)-3)])
+
+    for i in range(len(essprime)):
+        for colum in range(len(Chart[0])):
+            if Chart[essprime[i]][colum] == 1:
+                for row in range(len(Chart)):
+                    Chart[row][colum] = 0
+
+    if check_all_zero(Chart) == True:
+        P_final = [essprime]
+    else:
+        #petrick's method
+        P = petrick_method(Chart)
+        P_cost = []
+        for prime in P:
+            count = 0
+            for k in range(len(unchecked)):
+                for l in prime:
+                    if l == k:
+                        count = count+ cal_efficient(unchecked[k])
+            P_cost.append(count)
+
+
+        for k in range(len(P_cost)):
+            if P_cost[k] == min(P_cost):
+                P_final.append(P[k])
+
+        for k in P_final:
+            for l in essential_prime:
+                if l not in k:
+                    k.append(l)
+
+    return P_final
+
+#Calculating the number of literals
+def cal_efficient(s):
+    count = 0
+    for i in range(len(s)):
+        if s[i] != '-':
+            count+=1
+
+    return count
+
+#Hacks to covert binary to letters !!
+def binary_to_letter(s):
+    em = ''
+    ch = 'a'
+    more = False
+    n = 0
+    for i in range(len(s)):
+        #if it is a range a-zA-Z
+        if more == False:
+            if s[i] == '1':
+                em = em + ch
+            elif s[i] == '0':
+                em = em + ch+ '\''
+
+        if more == True:
+            if s[i] == '1':
+                em = em + ch + str(n)
+            elif s[i] == '0':
+                em = em + ch + str(n) + '\''
+            n+=1
+        #conditions for next operations
+        if ch=='z' and more == False:
+            ch = 'A'
+        elif ch=='Z':
+            ch = 'a'
+            more = True
+
+        elif more == False:
+            ch = chr(ord(ch)+1)
+    return em
+
+
+def main():                         #A general python concentive
+    numvar = int(input("Enter the number of variables: "))
+    minter =input("Enter the minterms:")
+    a = minter.split()
+    a = list(map(int, a))
+
+    group = [[] for x in range(numvar+1)]
+
+    for i in range(len(a)):
+        a[i] = bin(a[i])[2:]
+        if len(a[i]) < numvar:
+            for j in range(numvar - len(a[i])):
+                a[i] = '0'+ a[i]
+        elif len(a[i]) > numvar:
+            print ('\nError : Choose the correct number of variables ')
+            return
+        index = a[i].count('1')
+        group[index].append(a[i])
+
+
+    all_group=[]
+    unchecked = []
+    #combine the pairs in series until nothing new can be combined
+    while check_empty(group) == False:
+        all_group.append(group)
+        next_group, unchecked = combinePairs(group,unchecked)
+        group = remove_redundant(next_group)
+
+    s = "\nPrime Implicants:"
+    for i in unchecked:
+        s= s + binary_to_letter(i) + " , "
+    print (s[:(len(s)-3)])
+
+    #make the prime implicant chart
+    Chart = [[0 for x in range(len(a))] for x in range(len(unchecked))]
+
+    for r in range(len(a)):
+        for t in range (len(unchecked)):
+            #term is same as number
+            if compBinarySame(unchecked[t], a[r]):
+               Chart[t][r] = 1
+
+    primnum = find_minimum_cost(Chart, unchecked)
+    primnum = remove_redundant(primnum)
+
+
+    print ("~~--Answer is--~~")
+
+    for prime in primnum:
+        s=''
+        for i in range(len(unchecked)):
+            for j in prime:
+                if j == i:
+                    s= s+binary_to_letter(unchecked[i])+' + '
+        print (s[:(len(s)-3)])
+
+
+
+if __name__ == "__main__":
+    main()           #Way of calling the main() function
+    A = input("Press Enter to Quit")   
